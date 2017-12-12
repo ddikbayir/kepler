@@ -16,14 +16,14 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 __inline__ __device__
-int warpReduceSum(float val) {
+float warpReduceSum(float val) {
   for (int offset = warpSize/2; offset > 0; offset /= 2) 
     val += __shfl_down(val, offset);
   return val;
 }
 
 __inline__ __device__
-int blockReduceSum(float val) {
+float blockReduceSum(float val) {
 
   static __shared__ int shared[32]; // Shared mem for 32 partial sums
   int lane = threadIdx.x % warpSize;
@@ -78,7 +78,7 @@ void run_test()
 
   for(int i=0; i<N; i++)
   {
-    in[i] = 1/1000;
+    in[i] = 1;
   }
 
   cudaMalloc(&d_in, N*sizeof(float));
