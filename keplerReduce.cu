@@ -16,14 +16,14 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 __inline__ __device__
-float warpReduceSum(float val) {
+int warpReduceSum(int val) {
   for (int offset = warpSize/2; offset > 0; offset /= 2) 
     val += __shfl_down(val, offset);
   return val;
 }
 
 __inline__ __device__
-float blockReduceSum(float val) {
+int blockReduceSum(int val) {
 
   static __shared__ int shared[32]; // Shared mem for 32 partial sums
   int lane = threadIdx.x % warpSize;
@@ -43,13 +43,13 @@ float blockReduceSum(float val) {
   return val;
 }
 
-__global__ void deviceReduceKernel(float *in, float* out, int N) {
+__global__ void deviceReduceKernel(int *in, int* out, int N) {
   float sum = 0;
   //reduce multiple elements per thread
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; 
+  for (int i = blockIdx.x * 2* blockDim.x + threadIdx.x; 
        i < N; 
-       i += blockDim.x * gridDim.x) {
-    sum += in[i];
+       i += blockDim.x * 2 * gridDim.x) {
+    sum += in[i] + in[i+blockDim.x];
   }
   sum = blockReduceSum(sum);
   if (threadIdx.x==0)
@@ -67,22 +67,22 @@ int main(void){
 
 void run_test()
 {
-  const int N = 1 << 20;
+  const int N = 1 << 22;
 
   printf("N: %d\n", N);
-  float *in, *out, *d_in, *d_out;
+  int *in, *out, *d_in, *d_out;
 
-  in = (float*)malloc(N*sizeof(float));
+  in = (int*)malloc(N*sizeof(int));
 
-  out = (float*)malloc(N*sizeof(float));
+  out = (int*)malloc(N*sizeof(int));
 
   for(int i=0; i<N; i++)
   {
     in[i] = 1;
   }
 
-  cudaMalloc(&d_in, N*sizeof(float));
-  cudaMalloc(&d_out, N*sizeof(float));
+  cudaMalloc(&d_in, N*sizeof(int));
+  cudaMalloc(&d_out, N*sizeof(int));
 
   //Event variables
   cudaEvent_t start, stop;
@@ -91,20 +91,20 @@ void run_test()
 
   //Transfer host data to device
 
-  gpuErrchk(cudaMemcpy(d_in, in, N*sizeof(float), cudaMemcpyHostToDevice));
-  gpuErrchk(cudaMemcpy(d_out, out, N*sizeof(float), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(d_in, in, N*sizeof(int), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMemcpy(d_out, out, N*sizeof(int), cudaMemcpyHostToDevice));
 
 
   cudaEventRecord(start);
-  deviceReduceKernel<<<32,1024>>>(d_in,d_out, N);
+  deviceReduceKernel<<<64,256>>>(d_in,d_out, N);
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
   float ms = 0;
   cudaEventElapsedTime(&ms,start,stop);
 
-  gpuErrchk(cudaMemcpy(out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(out, d_out, N*sizeof(int), cudaMemcpyDeviceToHost));
 
-  double total = (N)*sizeof(float);
+  double total = (N)*sizeof(int);
 
   double ebw = total/(ms*1e6);
 
@@ -115,6 +115,6 @@ void run_test()
   for(int i=0;i<4;i++)
   {
     
-    printf("%.3f %d ", out[i], i);
+    printf("%d %d ", out[i], i);
   }
 }
