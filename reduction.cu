@@ -133,12 +133,12 @@ void run_test()
 {
 
 	printf("%.3f\n", float(20/1000) );
-	const int dim_len = 3;
+	const int dim_len = 4;
 
 	//dimension sizes
-	int dims[dim_len] = {4096,128,128};
+	int dims[dim_len] = {64,128,64,128};
 	//dimensions to reduce
-	int rdims[2] = {1,2}; //x and y
+	int rdims[2] = {1,3}; //x and y
 
 
 	int strides[dim_len];
@@ -172,7 +172,7 @@ void run_test()
 	srand(time(NULL));
 	for(int i=0; i<N;i++)
 	{
-		if(i%4096 == 1)
+		if(i%64 == 1)
 		{
 			in[i] = float(1)/1000; //(float)rand() / (float)RAND_MAX;//
 		}
