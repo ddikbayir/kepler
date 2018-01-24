@@ -52,8 +52,8 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 	
 	int area = dim1 * dim2;
 	int start = blockIdx.x * noEls * blockDim.x + threadIdx.x;
+	//int gridStride = splane * gridDim.x;
 	int gridStride = splane * gridDim.x;
-
 	
 	//relative index and coordinates calculation
 	int target = 0;
@@ -143,7 +143,7 @@ void run_test()
 	const int dim_len = 3;
 
 	//dimension sizes
-	int dims[dim_len] = {32,32,65536};
+	int dims[dim_len] = {128,128,4096};
 	//dimensions to reduce
 	int rdims[2] = {0,1}; //x and y
 
@@ -173,7 +173,7 @@ void run_test()
 	in = (float*)malloc(N*sizeof(float));
 
 	
-	int planeCount = 65536;//8192;//131072;
+	int planeCount = 4096;//8192;//131072;
 
 	out = (float*)malloc(planeCount*sizeof(float)); 
 	srand(time(NULL));
@@ -216,13 +216,13 @@ void run_test()
 	int splane = strides[2];
 	int dim1 = dims[rdims[0]];
 	int dim2 = dims[rdims[1]];
-	int noEls = 8;
+	int noEls = 16;
 	//Record kernel
 	int noMeasures = 10; //number of measurements to take
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
-		reduction<<<512,128>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
+		reduction<<<256,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
 	}
 	
 	cudaEventRecord(stop);
@@ -251,7 +251,7 @@ void run_test()
 	double sizeD = sizeof(float);
 	int lengthOut = sizeOut/sizeD;
 	printf("Length: %d\n", lengthOut);
-	printf("%.3f", out[65535/*131071*/]);
+	printf("%.3f", out[4095/*131071*/]);
 	printf("\n");
 	cudaFree(d_in);
 	cudaFree(d_out);
