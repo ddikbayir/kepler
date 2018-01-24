@@ -143,9 +143,9 @@ void run_test()
 	const int dim_len = 3;
 
 	//dimension sizes
-	int dims[dim_len] = {128,128,4096};
+	int dims[dim_len] = {128,4096,128};
 	//dimensions to reduce
-	int rdims[2] = {0,1}; //x and y
+	int rdims[2] = {0,2}; //x and y
 
 
 	int strides[dim_len];
@@ -213,12 +213,12 @@ void run_test()
 
 	int s1 = strides[rdims[0]];
 	int s2 = strides[rdims[1]];
-	int splane = strides[2];
+	int splane = strides[1];
 	int dim1 = dims[rdims[0]];
 	int dim2 = dims[rdims[1]];
 	int noEls = 16;
 	//Record kernel
-	int noMeasures = 10; //number of measurements to take
+	int noMeasures = 1000; //number of measurements to take
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
