@@ -51,15 +51,14 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 	int cur_plane;
 
 	int start = blockIdx.x * noEls * blockDim.x + threadIdx.x;
-	int gridStride = splane * noEls * gridDim.x;
+	int gridStride = blockDim.x * noEls * gridDim.x;
 
 	//relative index and coordinates calculation
 	int area = dim1 * dim2;
 	
-	
-	target = (i%dim1) * s1;
- 	target += ((i/ dim1) % dim2) * s2;
- 	target += ((i/area)) * splane;
+	int target = (start%dim1) * s1;
+ 	target += ((start / dim1) % dim2) * s2;
+ 	target += ((start/area)) * splane;
 	/*int tempDiv = area;
 	/*
 	for(int dimIter=0; dimIter<noDims; dimIter++)
@@ -70,7 +69,6 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 		}
 	}
 	*/
-	int target = 0;
 	int counter = 0;
 	int quarter = dim2 / noEls;
 	quarter = quarter *s2;
@@ -84,13 +82,14 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 		//calculate the first target index
  		
 
- 		
+ 		//determine which plane the thread is reducing
+ 		//cur_plane = (int)(i/area);
 
  		//printf("Test: tid= %d  target= %d target2= %d \n\n", i, target, target + (dim2/2 * s2));
  		
  		for(int iter=0; iter < noEls; iter++)
  		{
- 			sum += in[target + iter*quarter];
+ 			sum += in[gridStride*counter + target + iter*quarter];
 
  		}
  		//__syncthreads();
@@ -133,13 +132,13 @@ void printArr(int *arr)
 void run_test()
 {
 
-	
-	const int dim_len = 3;
+	printf("%.3f\n", float(20/1000) );
+	const int dim_len = 4;
 
 	//dimension sizes
-	int dims[dim_len] = {32,32,4096};
+	int dims[dim_len] = {64,128,64,128};
 	//dimensions to reduce
-	int rdims[2] = {0,1}; //x and y
+	int rdims[2] = {1,3}; //x and y
 
 
 	int strides[dim_len];
@@ -173,9 +172,9 @@ void run_test()
 	srand(time(NULL));
 	for(int i=0; i<N;i++)
 	{
-		if(i%4096 == 1)
+		if(i%64 == 1)
 		{
-			in[i] = float(i)/1000; //(float)rand() / (float)RAND_MAX;//
+			in[i] = float(1)/1000; //(float)rand() / (float)RAND_MAX;//
 		}
 		else
 		{
@@ -207,7 +206,7 @@ void run_test()
 
 	int s1 = strides[rdims[0]];
 	int s2 = strides[rdims[1]];
-	int splane = strides[2];
+	int splane = strides[0];
 	int dim1 = dims[rdims[0]];
 	int dim2 = dims[rdims[1]];
 	int noEls = 16;
@@ -216,7 +215,7 @@ void run_test()
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
-		reduction<<<2048,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
+		reduction<<<4096,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
 	}
 	
 	cudaEventRecord(stop);
