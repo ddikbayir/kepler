@@ -50,16 +50,15 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 	float sum =0;
 	int cur_plane;
 
+	int area = dim1 * dim2;
 	int start = blockIdx.x * noEls * blockDim.x + threadIdx.x;
-	int gridStride = splane * noEls * gridDim.x;
+	int gridStride = blockDim.x * noEls * gridDim.x;
 
 	//relative index and coordinates calculation
-	int area = dim1 * dim2;
 	
 	
-	target = (i%dim1) * s1;
- 	target += ((i/ dim1) % dim2) * s2;
- 	target += ((i/area)) * splane;
+	
+	
 	/*int tempDiv = area;
 	/*
 	for(int dimIter=0; dimIter<noDims; dimIter++)
@@ -85,7 +84,9 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
  		
 
  		
-
+		target = (i%dim1) * s1;
+ 		target += ((i/ dim1) % dim2) * s2;
+ 		target += ((i/area)) * splane;
  		//printf("Test: tid= %d  target= %d target2= %d \n\n", i, target, target + (dim2/2 * s2));
  		
  		for(int iter=0; iter < noEls; iter++)
@@ -137,7 +138,7 @@ void run_test()
 	const int dim_len = 3;
 
 	//dimension sizes
-	int dims[dim_len] = {32,32,4096};
+	int dims[dim_len] = {128,128,4096};
 	//dimensions to reduce
 	int rdims[2] = {0,1}; //x and y
 
@@ -175,11 +176,11 @@ void run_test()
 	{
 		if(i%4096 == 1)
 		{
-			in[i] = float(i)/1000; //(float)rand() / (float)RAND_MAX;//
+			in[i] = float(i)/1; //(float)rand() / (float)RAND_MAX;//
 		}
 		else
 		{
-			in[i] = float(i)/1000;
+			in[i] = float(i)/1;
 		}
 	}
 	/*
