@@ -176,11 +176,11 @@ void run_test()
 	{
 		if(i%4096 == 1)
 		{
-			in[i] = float(i)/1; //(float)rand() / (float)RAND_MAX;//
+			in[i] = float(i)/1000; //(float)rand() / (float)RAND_MAX;//
 		}
 		else
 		{
-			in[i] = float(i)/1;
+			in[i] = float(i)/1000;
 		}
 	}
 	/*
@@ -217,7 +217,7 @@ void run_test()
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
-		reduction<<<2048,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
+		reduction<<<512,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
 	}
 	
 	cudaEventRecord(stop);
