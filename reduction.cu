@@ -138,9 +138,9 @@ void run_test()
 	const int dim_len = 3;
 
 	//dimension sizes
-	int dims[dim_len] = {128,128,4096};
+	int dims[dim_len] = {128,4096,128};
 	//dimensions to reduce
-	int rdims[2] = {0,1}; //x and y
+	int rdims[2] = {0,2}; //x and y
 
 
 	int strides[dim_len];
@@ -208,7 +208,7 @@ void run_test()
 
 	int s1 = strides[rdims[0]];
 	int s2 = strides[rdims[1]];
-	int splane = strides[2];
+	int splane = strides[1];
 	int dim1 = dims[rdims[0]];
 	int dim2 = dims[rdims[1]];
 	int noEls = 16;
@@ -217,7 +217,7 @@ void run_test()
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
-		reduction<<<512,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
+		reduction<<<2048,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
 	}
 	
 	cudaEventRecord(stop);
