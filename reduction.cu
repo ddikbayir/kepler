@@ -49,14 +49,18 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 {
 	float sum =0;
 	int cur_plane;
-
+	
 	int area = dim1 * dim2;
 	int start = blockIdx.x * noEls * blockDim.x + threadIdx.x;
-	int gridStride = blockDim.x * noEls * gridDim.x;
+	int gridStride = splane * gridDim.x;
 
+	
 	//relative index and coordinates calculation
+	int target = 0;
 	
-	
+	target = (start%dim1) * s1;
+ 	target += ((start/ dim1) % dim2) * s2;
+ 	target += ((start/area)) * splane;
 	
 	
 	/*int tempDiv = area;
@@ -69,12 +73,12 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 		}
 	}
 	*/
-	int target = 0;
+	
 	int counter = 0;
 	int quarter = dim2 / noEls;
 	quarter = quarter *s2;
-	for(int i = start;
-		i < N;
+	for(int i = target;
+		counter < planeCount/gridDim.x;
 		i += gridStride)
 	{
 		sum = 0;
@@ -83,15 +87,16 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 		//calculate the first target index
  		
 
- 		
+ 		/*
 		target = (i%dim1) * s1;
  		target += ((i/ dim1) % dim2) * s2;
  		target += ((i/area)) * splane;
+ 		*/
  		//printf("Test: tid= %d  target= %d target2= %d \n\n", i, target, target + (dim2/2 * s2));
  		
  		for(int iter=0; iter < noEls; iter++)
  		{
- 			sum += in[target + iter*quarter];
+ 			sum += in[i + iter*quarter];
 
  		}
  		//__syncthreads();
@@ -138,9 +143,9 @@ void run_test()
 	const int dim_len = 3;
 
 	//dimension sizes
-	int dims[dim_len] = {128,4096,128};
+	int dims[dim_len] = {32,32,65536};
 	//dimensions to reduce
-	int rdims[2] = {0,2}; //x and y
+	int rdims[2] = {0,1}; //x and y
 
 
 	int strides[dim_len];
@@ -168,7 +173,7 @@ void run_test()
 	in = (float*)malloc(N*sizeof(float));
 
 	
-	int planeCount = 4096;//8192;//131072;
+	int planeCount = 65536;//8192;//131072;
 
 	out = (float*)malloc(planeCount*sizeof(float)); 
 	srand(time(NULL));
@@ -176,11 +181,11 @@ void run_test()
 	{
 		if(i%4096 == 1)
 		{
-			in[i] = float(i)/1000; //(float)rand() / (float)RAND_MAX;//
+			in[i] = float(1)/1000; //(float)rand() / (float)RAND_MAX;//
 		}
 		else
 		{
-			in[i] = float(i)/1000;
+			in[i] = float(1)/1000;
 		}
 	}
 	/*
@@ -208,16 +213,16 @@ void run_test()
 
 	int s1 = strides[rdims[0]];
 	int s2 = strides[rdims[1]];
-	int splane = strides[1];
+	int splane = strides[2];
 	int dim1 = dims[rdims[0]];
 	int dim2 = dims[rdims[1]];
-	int noEls = 16;
+	int noEls = 8;
 	//Record kernel
 	int noMeasures = 10; //number of measurements to take
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
-		reduction<<<2048,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
+		reduction<<<512,128>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
 	}
 	
 	cudaEventRecord(stop);
@@ -242,7 +247,11 @@ void run_test()
 		
 		printf("%.3f %d ", out[i], i);
 	}
-	printf("%.3f", out[63/*131071*/]);
+	double sizeOut = sizeof(out);
+	double sizeD = sizeof(float);
+	int lengthOut = sizeOut/sizeD;
+	printf("Length: %d\n", lengthOut);
+	printf("%.3f", out[65535/*131071*/]);
 	printf("\n");
 	cudaFree(d_in);
 	cudaFree(d_out);
