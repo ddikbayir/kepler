@@ -115,37 +115,16 @@ __global__ void reduction(float *in, float *out, int N, int s1, int s2, int spla
 	
 }
 
-
-
-int main(void)
-{
-	{
-		run_test();
-	}
-	return 0;
-}
-
-void printArr(int *arr)
-{
-	int i;
-	printf("Stride values in order: ");
-	for(i=0;i<=sizeof(arr)/sizeof(int);i++)
-	{
-
-		printf("%d ", arr[i]);
-	}
-	printf("\n\n");
-}
-void run_test()
+void run_test(int noEls, int noOfBlocks, int r1, int r2, int rplane, int dimen1, int dimen2, int dimen3)
 {
 
 	
 	const int dim_len = 3;
 
 	//dimension sizes
-	int dims[dim_len] = {128,4096,128};
+	int dims[dim_len] = {dimen1,dimen2,dimen3};
 	//dimensions to reduce
-	int rdims[2] = {0,2}; //x and y
+	int rdims[2] = {r1,r2}; //x and y
 
 
 	int strides[dim_len];
@@ -173,7 +152,7 @@ void run_test()
 	in = (float*)malloc(N*sizeof(float));
 
 	
-	int planeCount = 4096;//8192;//131072;
+	int planeCount = dims[rplane];//8192;//131072;
 
 	out = (float*)malloc(planeCount*sizeof(float)); 
 	srand(time(NULL));
@@ -213,16 +192,16 @@ void run_test()
 
 	int s1 = strides[rdims[0]];
 	int s2 = strides[rdims[1]];
-	int splane = strides[1];
+	int splane = strides[rplane];
 	int dim1 = dims[rdims[0]];
 	int dim2 = dims[rdims[1]];
-	int noEls = 16;
+	//int noElems = noEls;
 	//Record kernel
-	int noMeasures = 1000; //number of measurements to take
+	int noMeasures = 10; //number of measurements to take
 	cudaEventRecord(start);
 	for(int mesIter=0; mesIter<noMeasures;mesIter++)
 	{
-		reduction<<<256,1024>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
+		reduction<<<noOfBlocks,((dim1*dim2)/noEls)>>>(d_in,d_out, N, s1, s2, splane, dim1, dim2, planeCount, noEls);
 	}
 	
 	cudaEventRecord(stop);
@@ -232,7 +211,7 @@ void run_test()
 
 	gpuErrchk(cudaMemcpy(out, d_out, planeCount*sizeof(float), cudaMemcpyDeviceToHost));
 	ms = ms/noMeasures;
-	double total = (N+planeCount)*4;
+	double total = (N)*4;
 
 	double ebw = total/(ms*1e6);
 
@@ -256,3 +235,44 @@ void run_test()
 	cudaFree(d_in);
 	cudaFree(d_out);
 }
+
+int main(int argc, char *argv[])
+{
+	{
+		int noEls = 8;
+		int noOfBlocks = 512;
+		int r1 = 0;
+		int r2 = 1;
+		int rplane = 2;
+		int dim1 = 128;
+		int dim2 = 128;
+		int dim3 = 4096;
+
+		if(argc > 1)
+		{
+			noEls = atoi(argv[1]);
+			noOfBlocks = atoi(argv[2]);
+			r1 = atoi(argv[3]);
+			r2 = atoi(argv[4]);
+			rplane = atoi(argv[5]);
+			dim1 = atoi(argv[6]);
+			dim2 = atoi(argv[7]);
+			dim3 = atoi(argv[8]);
+		}
+		run_test(noEls, noOfBlocks, r1, r2, rplane, dim1, dim2, dim3);
+	}
+	return 0;
+}
+
+void printArr(int *arr)
+{
+	int i;
+	printf("Stride values in order: ");
+	for(i=0;i<=sizeof(arr)/sizeof(int);i++)
+	{
+
+		printf("%d ", arr[i]);
+	}
+	printf("\n\n");
+}
+
