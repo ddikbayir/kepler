@@ -158,7 +158,7 @@ void run_test(int noEls, int noOfBlocks, int r1, int r2, int rplane, int dimen1,
 	srand(time(NULL));
 	for(int i=0; i<N;i++)
 	{
-		if((i%128)== 1)
+		if((i/128) %16384 == 16300)
 		{
 			in[i] =  float(1)/1000;//(float)rand() / (float)RAND_MAX;////
 		}
@@ -230,7 +230,7 @@ void run_test(int noEls, int noOfBlocks, int r1, int r2, int rplane, int dimen1,
 	double sizeD = sizeof(float);
 	int lengthOut = sizeOut/sizeD;
 	printf("Length: %d\n", lengthOut);
-	printf("%.3f", out[245/*131071*/]);
+	printf("%.3f", out[16300/*131071*/]);
 	printf("\n");
 	cudaFree(d_in);
 	cudaFree(d_out);

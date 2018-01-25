@@ -163,9 +163,9 @@ void run_test(int noEls, int noOfBlocks, int r1, int r2, int rplane, int dimen1,
 	srand(time(NULL));
 	for(int i=0; i<N;i++)
 	{
-		if(i%1024 == 1)
+		if((i/128)%2048 == 2047)
 		{
-			in[i] = float(i)/1; //(float)rand() / (float)RAND_MAX;//
+			in[i] = float(1)/1; //(float)rand() / (float)RAND_MAX;//
 		}
 		else
 		{
@@ -235,7 +235,7 @@ void run_test(int noEls, int noOfBlocks, int r1, int r2, int rplane, int dimen1,
 	double sizeD = sizeof(float);
 	int lengthOut = sizeOut/sizeD;
 	printf("Length: %d\n", lengthOut);
-	printf("%.3f", out[15/*131071*/]);
+	printf("%.3f", out[16383/*131071*/]);
 	for(int i=0;i<16;i++)
 	{
 		if(out[i] == 0)
