@@ -18,16 +18,16 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 __inline__ __device__
-float warpReduceSum(float val) {
+float warpReduceSum(double val) {
   for (int offset = warpSize/2; offset > 0; offset /= 2) 
     val += __shfl_down(val, offset);
   return val;
 }
 
 __inline__ __device__
-float blockReduceSum(float val) {
+float blockReduceSum(double val) {
 
-  static __shared__ float shared[32]; // Shared mem for 32 partial sums
+  static __shared__ double shared[32]; // Shared mem for 32 partial sums
   int lane = threadIdx.x % warpSize;
   int wid = threadIdx.x / warpSize;
 
@@ -45,9 +45,9 @@ float blockReduceSum(float val) {
   return val;
 }
 
-__global__ void reduction(float *in, float *out, int N, int s1, int splane, int dim1, int planeCount, int noEls)
+__global__ void reduction(double *in, double *out, int N, int s1, int splane, int dim1, int planeCount, int noEls)
 {
-	float sum =0;
+	double sum =0;
 	int cur_plane;
 	
 	int area = dim1;
@@ -149,25 +149,25 @@ void run_test(int noEls, int noOfBlocks, int r1, int rplane, int dimen1, int dim
 	printArr(strides);
 
 	//Allocate memory for in and out in host and fill in
-	float *in, *out, *d_in, *d_out;
+	double *in, *out, *d_in, *d_out;
 	//int *d_strides, *d_rdims, *d_dims;
 
-	in = (float*)malloc(N*sizeof(float));
+	in = (double*)malloc(N*sizeof(double));
 
 	
-	int planeCount = dims[rplane]*dims[2];//8192;//131072;
+	int planeCount = N/(dims[rdim]);//8192;//131072;
 
-	out = (float*)malloc(planeCount*sizeof(float)); 
+	out = (double*)malloc(planeCount*sizeof(double)); 
 	srand(time(NULL));
 	for(int i=0; i<N;i++)
 	{
 		if((i/128) %16384 == 16300)
 		{
-			in[i] =  float(i)/1000;//(float)rand() / (float)RAND_MAX;////
+			in[i] =  double(i)/1000;//(float)rand() / (float)RAND_MAX;////
 		}
 		else
 		{
-			in[i] = float(i)/1000;//(float)rand() / (float)RAND_MAX;
+			in[i] = double(i)/1000;//(float)rand() / (float)RAND_MAX;
 		}
 	}
 	/*
@@ -178,8 +178,8 @@ void run_test(int noEls, int noOfBlocks, int r1, int rplane, int dimen1, int dim
 	*/
 	printf("\n\n");
 	//Allocate memory for in and out on device
-	cudaMalloc(&d_in, N*sizeof(float));
-	cudaMalloc(&d_out, planeCount*sizeof(float));
+	cudaMalloc(&d_in, N*sizeof(double));
+	cudaMalloc(&d_out, planeCount*sizeof(double));
 	
 
 	//Event variables
@@ -189,8 +189,8 @@ void run_test(int noEls, int noOfBlocks, int r1, int rplane, int dimen1, int dim
 	
 	//Transfer host data to device
 
-	gpuErrchk(cudaMemcpy(d_in, in, N*sizeof(float), cudaMemcpyHostToDevice));
-	gpuErrchk(cudaMemcpy(d_out, out, planeCount*sizeof(float), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(d_in, in, N*sizeof(double), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(d_out, out, planeCount*sizeof(double), cudaMemcpyHostToDevice));
 
 
 	int s1 = strides[rdim];
@@ -212,9 +212,9 @@ void run_test(int noEls, int noOfBlocks, int r1, int rplane, int dimen1, int dim
 	float ms = 0;
 	cudaEventElapsedTime(&ms,start,stop);
 
-	gpuErrchk(cudaMemcpy(out, d_out, planeCount*sizeof(float), cudaMemcpyDeviceToHost));
+	gpuErrchk(cudaMemcpy(out, d_out, planeCount*sizeof(double), cudaMemcpyDeviceToHost));
 	ms = ms/noMeasures;
-	double total = (N)*4;
+	double total = (N)*8;
 
 	double ebw = total/(ms*1e6);
 
