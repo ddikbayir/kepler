@@ -235,7 +235,7 @@ void run_test(int noEls, int noOfBlocks, int r1, int r2, int rplane, int dimen1,
 	double sizeD = sizeof(double);
 	int lengthOut = sizeOut/sizeD;
 	printf("Length: %d\n", lengthOut);
-	printf("%.3f", out[16383/*131071*/]);
+	printf("%.3f", out[2047/*131071*/]);
 	for(int i=0;i<16;i++)
 	{
 		if(out[i] == 0)
