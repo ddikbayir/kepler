@@ -214,7 +214,7 @@ void run_test(int noEls, int noOfBlocks, int r1, int rplane, int dimen1, int dim
 
 	gpuErrchk(cudaMemcpy(out, d_out, planeCount*sizeof(double), cudaMemcpyDeviceToHost));
 	ms = ms/noMeasures;
-	double total = (N)*4;
+	double total = (N)*8;
 
 	double ebw = total/(ms*1e6);
 
